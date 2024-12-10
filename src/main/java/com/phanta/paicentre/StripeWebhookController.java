@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/stripe")
+@RequestMapping("/api/stripe/controller")
 public class StripeWebhookController {
 
     @Value("${stripe.api.key}")
