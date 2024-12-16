@@ -1,15 +1,18 @@
 package com.phanta.paicentre;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:3000")
 @RequestMapping("/api/paypal")
 public class PayPalConnection {
 
@@ -30,8 +33,9 @@ public class PayPalConnection {
     private String accessToken; // To store the access token after authorization
 
     // Step 1: Redirect to PayPal for Authorization
+    // Step 1: Redirect to PayPal for Authorization
     @GetMapping("/connect")
-    public ResponseEntity<String> connectToPayPal() {
+    public void connectToPayPal(HttpServletResponse response) throws IOException {
         String baseUrl = mode.equals("sandbox") ? "sandbox.paypal.com" : "paypal.com";
 
         String authorizationUrl = String.format(
@@ -41,9 +45,9 @@ public class PayPalConnection {
                 redirectUri
         );
 
-        return ResponseEntity.ok("<a href=\"" + authorizationUrl + "\">Connect to PayPal</a>");
+        // Redirect the user directly to the authorization URL
+        response.sendRedirect(authorizationUrl);
     }
-
 
 
 
@@ -54,69 +58,85 @@ public class PayPalConnection {
     }
 
     // Step 2: Handle OAuth callback
-//    @GetMapping("/oauth/callback")
-//    public ResponseEntity<String> handleOAuthCallback(@RequestParam("code") String code) {
-//        try {
-//            // Exchange authorization code for access token
-//            this.accessToken = getAccessToken(code);
-//
-//            // Redirect to the frontend page with a query parameter indicating connection success
-//            return ResponseEntity.status(HttpStatus.FOUND)
-//                    .location(URI.create("http://localhost:3000/pay?status=connected"))
-//                    .build();
-//        } catch (Exception e) {
-//            // In case of an error, redirect to the frontend with an error status
-//            return ResponseEntity.status(HttpStatus.FOUND)
-//                    .location(URI.create("http://localhost:3000/pay?status=error"))
-//                    .build();
-//        }
-//    }
-
     @GetMapping("/oauth/callback")
-    public ResponseEntity<String> handleOAuthCallback(@RequestParam("code") String code, @RequestParam("scope") String scope) {
+    public ResponseEntity<String> handleOAuthCallback(@RequestParam(name = "code", required = false) String code) {
         try {
-            String accessToken = getAccessToken(code);
-            Map<String, String> userDetails = getUserDetails();
+            // Check if the code parameter is present
+            if (code == null || code.isEmpty()) {
+                throw new IllegalArgumentException("Missing authorization code.");
+            }
 
-            String successMessage =
-                    "<!DOCTYPE html>" +
-                            "<html>" +
-                            "<body>" +
-                            "<script>" +
-                            "  console.log('Sending PAYPAL_CONNECTED message');" +
-                            "  window.opener.postMessage({ " +
-                            "    type: 'PAYPAL_CONNECTED', " +
-                            "    client_id: '" + clientId + "', " +
-                            "    name: '" + userDetails.get("name") + "', " +
-                            "    email: '" + userDetails.get("email") + "' " +
-                            "  }, 'https://gentle-ghosts-drop.loca.lt');" +  // Explicitly set the target origin
-                            "  window.close();" +
-                            "</script>" +
-                            "</body>" +
-                            "</html>";
+            // Exchange the authorization code for an access token
+            this.accessToken = getAccessToken(code);
 
-            return ResponseEntity.ok()
-                    .contentType(MediaType.TEXT_HTML)
-                    .body(successMessage);
-
+            // If the token exchange is successful, redirect with success status
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create("http://localhost:3000/pay?status=connected"))
+                    .build();
         } catch (Exception e) {
-            String errorMessage =
-                    "<!DOCTYPE html>" +
-                            "<html>" +
-                            "<body>" +
-                            "<script>" +
-                            "  console.error('Error:', '" + e.getMessage() + "');" +
-                            "  window.opener.postMessage({ type: 'PAYPAL_ERROR', error: '" + e.getMessage() + "' }, 'https://gentle-ghosts-drop.loca.lt');" +  // Explicitly set the target origin
-                            "  window.close();" +
-                            "</script>" +
-                            "</body>" +
-                            "</html>";
+            // Log the error for debugging purposes
+            e.printStackTrace();
 
-            return ResponseEntity.ok()
-                    .contentType(MediaType.TEXT_HTML)
-                    .body(errorMessage);
+            // Redirect with error status if anything fails
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create("http://localhost:3000/pay?status=error"))
+                    .build();
         }
     }
+
+    @GetMapping("/verify")
+    public ResponseEntity<Map<String, Boolean>> verifyConnection() {
+        Map<String, Boolean> response = new HashMap<>();
+        response.put("isConnected", accessToken != null && !accessToken.isEmpty());
+        return ResponseEntity.ok(response);
+    }
+
+
+//    @GetMapping("/oauth/callback")
+//    public ResponseEntity<String> handleOAuthCallback(@RequestParam("code") String code, @RequestParam("scope") String scope) {
+//        try {
+//            String accessToken = getAccessToken(code);
+//            Map<String, String> userDetails = getUserDetails();
+//
+//            String successMessage =
+//                    "<!DOCTYPE html>" +
+//                            "<html>" +
+//                            "<body>" +
+//                            "<script>" +
+//                            "  console.log('Sending PAYPAL_CONNECTED message');" +
+//                            "  window.opener.postMessage({ " +
+//                            "    type: 'PAYPAL_CONNECTED', " +
+//                            "    client_id: '" + clientId + "', " +
+//                            "    name: '" + userDetails.get("name") + "', " +
+//                            "    email: '" + userDetails.get("email") + "' " +
+//                            "  }, 'https://gentle-ghosts-drop.loca.lt');" +  // Explicitly set the target origin
+//                            "  window.close();" +
+//                            "</script>" +
+//                            "</body>" +
+//                            "</html>";
+//
+//            return ResponseEntity.ok()
+//                    .contentType(MediaType.TEXT_HTML)
+//                    .body(successMessage);
+//
+//        } catch (Exception e) {
+//            String errorMessage =
+//                    "<!DOCTYPE html>" +
+//                            "<html>" +
+//                            "<body>" +
+//                            "<script>" +
+//                            "  console.error('Error:', '" + e.getMessage() + "');" +
+//                            "  window.opener.postMessage({ type: 'PAYPAL_ERROR', error: '" + e.getMessage() + "' }, 'https://gentle-ghosts-drop.loca.lt');" +  // Explicitly set the target origin
+//                            "  window.close();" +
+//                            "</script>" +
+//                            "</body>" +
+//                            "</html>";
+//
+//            return ResponseEntity.ok()
+//                    .contentType(MediaType.TEXT_HTML)
+//                    .body(errorMessage);
+//        }
+//    }
 
 
     // Helper Method: Fetch user details from PayPal
