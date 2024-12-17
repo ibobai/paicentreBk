@@ -43,7 +43,6 @@ public class StripeConnection {
     }
 
     // Step 2: Handle the OAuth callback and pass the code to the frontend
-    // Step 2: Handle the OAuth callback and pass the code to the frontend
     @GetMapping("/oauth/callback")
     public void handleOAuthCallback(@RequestParam("code") String code, HttpServletResponse httpServletResponse) throws IOException {
         try {
@@ -51,7 +50,7 @@ public class StripeConnection {
             System.out.println("Received code: " + code);
 
             // Set frontend URL as localhost for local development
-            String frontendUrl = "http://localhost:3000/str?status=connected&code=" + URLEncoder.encode(code, StandardCharsets.UTF_8);
+            String frontendUrl = "http://localhost:5173/settings/webhooks?status=connected&source=stripe&code=" + URLEncoder.encode(code, StandardCharsets.UTF_8);
 
             // Redirect to the frontend URL
             httpServletResponse.sendRedirect(frontendUrl);
@@ -59,7 +58,7 @@ public class StripeConnection {
             String errorMessage = URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8);
 
             // Error handling: redirect to error page on the frontend
-            String frontendUrl = "http://localhost:3000/str?status=error&message=" + errorMessage;
+            String frontendUrl = "http://localhost:5173/settings/webhooks?status=error&source=stripe&message=" + errorMessage;
 
             // Redirect to the error page on the frontend
             httpServletResponse.sendRedirect(frontendUrl);

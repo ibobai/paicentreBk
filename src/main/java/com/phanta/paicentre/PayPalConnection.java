@@ -71,7 +71,7 @@ public class PayPalConnection {
 
             // If the token exchange is successful, redirect with success status
             return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create("http://localhost:3000/pay?status=connected"))
+                    .location(URI.create("http://localhost:5173/settings/webhooks?status=connected&source=paypal"))
                     .build();
         } catch (Exception e) {
             // Log the error for debugging purposes
@@ -79,7 +79,7 @@ public class PayPalConnection {
 
             // Redirect with error status if anything fails
             return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create("http://localhost:3000/pay?status=error"))
+                    .location(URI.create("http://localhost:5173/settings/webhooks?status=error&source=paypal"))
                     .build();
         }
     }
