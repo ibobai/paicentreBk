@@ -8,12 +8,18 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:3000")
-@RequestMapping("/api/paypal")
+//@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "https://sb1nxlpyh-tirr-9jgexxq4--5173--c8c182a3.local-corp.webcontainer.io")
+
+@RequestMapping("/api/paypal/connection")
 public class PayPalConnection {
 
     // Read values from application.properties
@@ -59,9 +65,8 @@ public class PayPalConnection {
 
     // Step 2: Handle OAuth callback
     @GetMapping("/oauth/callback")
-    public ResponseEntity<String> handleOAuthCallback(@RequestParam(name = "code", required = false) String code) {
+    public ResponseEntity<Void> handleOAuthCallback(@RequestParam(name = "code", required = false) String code) {
         try {
-            // Check if the code parameter is present
             if (code == null || code.isEmpty()) {
                 throw new IllegalArgumentException("Missing authorization code.");
             }
@@ -69,77 +74,42 @@ public class PayPalConnection {
             // Exchange the authorization code for an access token
             this.accessToken = getAccessToken(code);
 
-            // If the token exchange is successful, redirect with success status
+            // Fetch user details using the access token
+            Map<String, String> userDetails = getUserDetails();
+
+            // Extract and URL-encode the required details
+            String name = URLEncoder.encode(userDetails.getOrDefault("name", "Unknown"), StandardCharsets.UTF_8);
+            String email = URLEncoder.encode(userDetails.getOrDefault("email", "Unknown"), StandardCharsets.UTF_8);
+            String payerId = URLEncoder.encode(userDetails.getOrDefault("payer_id", "Unknown"), StandardCharsets.UTF_8);
+
+            // Construct the redirect URL with payer_id, name, and email
+            String frontendUrl = String.format(
+                    // "http://localhost:5173/settings/webhooks?status=connected&source=paypal&client_id=%s&name=%s&email=%s",
+                    "https://sb1nxlpyh-tirr-9jgexxq4--5173--c8c182a3.local-corp.webcontainer.io/settings/webhooks?status=connected&source=paypal&client_id=%s&name=%s&email=%s",
+                    payerId, name, email
+            );
+            System.out.println(frontendUrl);
+
+            // Redirect to the frontend URL
             return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create("http://localhost:5173/settings/webhooks?status=connected&source=paypal"))
+                    .location(URI.create(frontendUrl))
                     .build();
         } catch (Exception e) {
-            // Log the error for debugging purposes
             e.printStackTrace();
 
-            // Redirect with error status if anything fails
+            // Handle error and redirect to error page with a message
+            String errorMessage = URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8);
+          //  String frontendErrorUrl = "http://localhost:5173/settings/webhooks?status=error&source=paypal&message=" + errorMessage;
+            String frontendErrorUrl = "https://sb1nxlpyh-tirr-9jgexxq4--5173--c8c182a3.local-corp.webcontainer.io/settings/webhooks?status=error&source=paypal&message=" + errorMessage;
+
             return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create("http://localhost:5173/settings/webhooks?status=error&source=paypal"))
+                    .location(URI.create(frontendErrorUrl))
                     .build();
         }
     }
 
-    @GetMapping("/verify")
-    public ResponseEntity<Map<String, Boolean>> verifyConnection() {
-        Map<String, Boolean> response = new HashMap<>();
-        response.put("isConnected", accessToken != null && !accessToken.isEmpty());
-        return ResponseEntity.ok(response);
-    }
 
 
-//    @GetMapping("/oauth/callback")
-//    public ResponseEntity<String> handleOAuthCallback(@RequestParam("code") String code, @RequestParam("scope") String scope) {
-//        try {
-//            String accessToken = getAccessToken(code);
-//            Map<String, String> userDetails = getUserDetails();
-//
-//            String successMessage =
-//                    "<!DOCTYPE html>" +
-//                            "<html>" +
-//                            "<body>" +
-//                            "<script>" +
-//                            "  console.log('Sending PAYPAL_CONNECTED message');" +
-//                            "  window.opener.postMessage({ " +
-//                            "    type: 'PAYPAL_CONNECTED', " +
-//                            "    client_id: '" + clientId + "', " +
-//                            "    name: '" + userDetails.get("name") + "', " +
-//                            "    email: '" + userDetails.get("email") + "' " +
-//                            "  }, 'https://gentle-ghosts-drop.loca.lt');" +  // Explicitly set the target origin
-//                            "  window.close();" +
-//                            "</script>" +
-//                            "</body>" +
-//                            "</html>";
-//
-//            return ResponseEntity.ok()
-//                    .contentType(MediaType.TEXT_HTML)
-//                    .body(successMessage);
-//
-//        } catch (Exception e) {
-//            String errorMessage =
-//                    "<!DOCTYPE html>" +
-//                            "<html>" +
-//                            "<body>" +
-//                            "<script>" +
-//                            "  console.error('Error:', '" + e.getMessage() + "');" +
-//                            "  window.opener.postMessage({ type: 'PAYPAL_ERROR', error: '" + e.getMessage() + "' }, 'https://gentle-ghosts-drop.loca.lt');" +  // Explicitly set the target origin
-//                            "  window.close();" +
-//                            "</script>" +
-//                            "</body>" +
-//                            "</html>";
-//
-//            return ResponseEntity.ok()
-//                    .contentType(MediaType.TEXT_HTML)
-//                    .body(errorMessage);
-//        }
-//    }
-
-
-    // Helper Method: Fetch user details from PayPal
     private Map<String, String> getUserDetails() throws Exception {
         String userInfoUrl = mode.equals("sandbox") ?
                 "https://api.sandbox.paypal.com/v1/identity/oauth2/userinfo?schema=paypalv1.1" :
@@ -148,19 +118,36 @@ public class PayPalConnection {
         RestTemplate restTemplate = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(accessToken); // Use Bearer Auth with the access token
+        headers.setBearerAuth(accessToken);
 
         HttpEntity<String> request = new HttpEntity<>(headers);
         ResponseEntity<Map> response = restTemplate.exchange(userInfoUrl, HttpMethod.GET, request, Map.class);
 
         if (response.getStatusCode() == HttpStatus.OK) {
             Map<String, Object> responseBody = response.getBody();
+            System.out.println("Response Body: " + responseBody);
+
             if (responseBody != null) {
-                String name = (String) responseBody.get("name");
-                String email = (String) responseBody.get("email");
+                // Extract name
+                String name = responseBody.getOrDefault("name", "Unknown").toString();
+
+                // Extract email from the 'emails' list
+                String email = "Unknown";
+                List<Map<String, Object>> emails = (List<Map<String, Object>>) responseBody.get("emails");
+                if (emails != null && !emails.isEmpty()) {
+                    Map<String, Object> emailEntry = emails.get(0);
+                    email = emailEntry.getOrDefault("value", "Unknown").toString();
+                }
+
+                // Extract payer_id
+                String payerId = responseBody.getOrDefault("payer_id", "Unknown").toString();
+
+                // Populate the user details map
                 Map<String, String> userDetails = new HashMap<>();
                 userDetails.put("name", name);
                 userDetails.put("email", email);
+                userDetails.put("payer_id", payerId); // Add the payer_id to the map
+
                 return userDetails;
             } else {
                 throw new RuntimeException("Failed to fetch user details from PayPal.");
@@ -170,21 +157,6 @@ public class PayPalConnection {
         }
     }
 
-
-    // Step 3: Create a webhook
-    @PostMapping("/webhook")
-    public ResponseEntity<String> createWebhook() {
-        if (accessToken == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Not authenticated with PayPal.");
-        }
-
-        try {
-            String webhookId = createPayPalWebhook();
-            return ResponseEntity.ok("Webhook created successfully with ID: " + webhookId);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error creating webhook: " + e.getMessage());
-        }
-    }
 
     // Helper Method: Exchange authorization code for access token
     private String getAccessToken(String authorizationCode) throws Exception {
@@ -215,8 +187,79 @@ public class PayPalConnection {
         }
     }
 
+
+
+
+    // Step 3: Create a webhook
+    @PostMapping("/webhook")
+    public ResponseEntity<Map<String, Object>> createWebhook(@RequestBody Map<String, Object> payload) {
+        try {
+            List<String> eventTypes = (List<String>) payload.get("events");
+
+            if (eventTypes == null || eventTypes.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "No event types specified."));
+            }
+
+            // Get a fresh access token for webhook creation
+            String merchantAccessToken = getAccessTokenForApiCalls();
+
+            // Check if the webhook already exists
+            Optional<Map<String, Object>> existingWebhook = findExistingWebhook(merchantAccessToken, "https://your-webhook-endpoint53.com/webhook");
+            if (existingWebhook.isPresent()) {
+                return ResponseEntity.ok(Map.of(
+                        "created", false,
+                        "message", "Webhook already exists",
+                        "webhookInfo", existingWebhook.get()
+                ));
+            }
+
+            // Create the webhook if it doesn't exist
+            Map<String, Object> webhookInfo = createPayPalWebhook(eventTypes, merchantAccessToken);
+            return ResponseEntity.ok(Map.of(
+                    "created", true,
+                    "message", "Webhook created successfully",
+                    "webhookInfo", webhookInfo
+            ));
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error creating webhook: " + e.getMessage()));
+        }
+    }
+
+
+    // Helper Method: Get access token using Client Credentials grant type for API calls
+    private String getAccessTokenForApiCalls() throws Exception {
+        String tokenUrl = mode.equals("sandbox") ?
+                "https://api.sandbox.paypal.com/v1/oauth2/token" :
+                "https://api.paypal.com/v1/oauth2/token";
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        headers.setBasicAuth(clientId, clientSecret); // Use Basic Auth with client ID and secret
+
+        String body = "grant_type=client_credentials"; // Client Credentials grant type
+        HttpEntity<String> request = new HttpEntity<>(body, headers);
+
+        ResponseEntity<Map> response = restTemplate.exchange(tokenUrl, HttpMethod.POST, request, Map.class);
+
+        if (response.getStatusCode() == HttpStatus.OK) {
+            Map<String, Object> responseBody = response.getBody();
+            if (responseBody != null && responseBody.containsKey("access_token")) {
+                return (String) responseBody.get("access_token");
+            } else {
+                throw new RuntimeException("No access_token in PayPal response.");
+            }
+        } else {
+            throw new RuntimeException("Failed to get access token: " + response.getStatusCode());
+        }
+    }
+
     // Helper Method: Create PayPal Webhook
-    private String createPayPalWebhook() throws Exception {
+    private Map<String, Object> createPayPalWebhook(List<String> eventTypes, String merchantAccessToken) throws Exception {
         String webhookUrl = mode.equals("sandbox") ?
                 "https://api.sandbox.paypal.com/v1/notifications/webhooks" :
                 "https://api.paypal.com/v1/notifications/webhooks";
@@ -225,14 +268,16 @@ public class PayPalConnection {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setBearerAuth(accessToken); // Use Bearer Auth with the access token
+        headers.setBearerAuth(merchantAccessToken); // Use the merchant-level access token
+
+        // Prepare the list of event types
+        List<Map<String, String>> eventTypeList = eventTypes.stream()
+                .map(type -> Map.of("name", type))
+                .toList();
 
         Map<String, Object> payload = new HashMap<>();
-        payload.put("url", "https://your-webhook-endpoint.com/webhook"); // Replace with your actual webhook URL
-        payload.put("event_types", new Object[]{
-                Map.of("name", "PAYMENT.SALE.COMPLETED"),
-                Map.of("name", "BILLING.SUBSCRIPTION.CREATED")
-        });
+        payload.put("url", "https://your-webhook-endpoint54.com/webhook"); // Replace with your actual webhook URL
+        payload.put("event_types", eventTypeList);
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
 
@@ -240,13 +285,56 @@ public class PayPalConnection {
 
         if (response.getStatusCode() == HttpStatus.CREATED) {
             Map<String, Object> responseBody = response.getBody();
-            if (responseBody != null && responseBody.containsKey("id")) {
-                return (String) responseBody.get("id");
+            if (responseBody != null) {
+                return responseBody;
             } else {
-                throw new RuntimeException("No webhook ID in PayPal response.");
+                throw new RuntimeException("No webhook details in PayPal response.");
             }
         } else {
             throw new RuntimeException("Failed to create webhook: " + response.getStatusCode());
         }
     }
+
+    private void deletePayPalWebhook(String webhookId) throws Exception {
+        String webhookUrl = mode.equals("sandbox") ?
+                "https://api.sandbox.paypal.com/v1/notifications/webhooks/" + webhookId :
+                "https://api.paypal.com/v1/notifications/webhooks/" + webhookId;
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+
+        HttpEntity<String> request = new HttpEntity<>(headers);
+
+        restTemplate.exchange(webhookUrl, HttpMethod.DELETE, request, Void.class);
+    }
+
+    private Optional<Map<String, Object>> findExistingWebhook(String accessToken, String webhookUrl) throws Exception {
+        String listWebhooksUrl = mode.equals("sandbox") ?
+                "https://api.sandbox.paypal.com/v1/notifications/webhooks" :
+                "https://api.paypal.com/v1/notifications/webhooks";
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+
+        HttpEntity<String> request = new HttpEntity<>(headers);
+
+        ResponseEntity<Map> response = restTemplate.exchange(listWebhooksUrl, HttpMethod.GET, request, Map.class);
+
+        if (response.getStatusCode() == HttpStatus.OK) {
+            List<Map<String, Object>> webhooks = (List<Map<String, Object>>) response.getBody().get("webhooks");
+            for (Map<String, Object> webhook : webhooks) {
+                if (webhookUrl.equals(webhook.get("url"))) {
+                    return Optional.of(webhook);
+                }
+            }
+        }
+
+        return Optional.empty();
+    }
+
+
 }
