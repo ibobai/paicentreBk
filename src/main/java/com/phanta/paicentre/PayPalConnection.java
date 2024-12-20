@@ -17,7 +17,7 @@ import java.util.Optional;
 
 @RestController
 //@CrossOrigin(origins = "http://localhost:3000")
-@CrossOrigin(origins = "https://sb1nxlpyh-tirr-9jgexxq4--5173--c8c182a3.local-corp.webcontainer.io")
+@CrossOrigin(origins = "https://sb1nxlpyh-tirr-boimpbp3--5173--c8c182a3.local-corp.webcontainer.io")
 
 @RequestMapping("/api/paypal/connection")
 public class PayPalConnection {
@@ -35,6 +35,11 @@ public class PayPalConnection {
     @Value("${paypal.mode}")
     private String mode;
 
+    @Value("${cors.allowed.origin}")
+    private String allowedOrigin;
+
+    @Value("${paypal.webhook.endpoint}")
+    private String webhookEndpoint;
 
     private String accessToken; // To store the access token after authorization
 
@@ -85,7 +90,7 @@ public class PayPalConnection {
             // Construct the redirect URL with payer_id, name, and email
             String frontendUrl = String.format(
                     // "http://localhost:5173/settings/webhooks?status=connected&source=paypal&client_id=%s&name=%s&email=%s",
-                    "https://sb1nxlpyh-tirr-9jgexxq4--5173--c8c182a3.local-corp.webcontainer.io/settings/webhooks?status=connected&source=paypal&client_id=%s&name=%s&email=%s",
+                    allowedOrigin +  "/settings/webhooks?status=connected&source=paypal&client_id=%s&name=%s&email=%s",
                     payerId, name, email
             );
             System.out.println(frontendUrl);
@@ -100,7 +105,7 @@ public class PayPalConnection {
             // Handle error and redirect to error page with a message
             String errorMessage = URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8);
           //  String frontendErrorUrl = "http://localhost:5173/settings/webhooks?status=error&source=paypal&message=" + errorMessage;
-            String frontendErrorUrl = "https://sb1nxlpyh-tirr-9jgexxq4--5173--c8c182a3.local-corp.webcontainer.io/settings/webhooks?status=error&source=paypal&message=" + errorMessage;
+            String frontendErrorUrl = allowedOrigin + "/settings/webhooks?status=error&source=paypal&message=" + errorMessage;
 
             return ResponseEntity.status(HttpStatus.FOUND)
                     .location(URI.create(frontendErrorUrl))
@@ -205,7 +210,7 @@ public class PayPalConnection {
             String merchantAccessToken = getAccessTokenForApiCalls();
 
             // Check if the webhook already exists
-            Optional<Map<String, Object>> existingWebhook = findExistingWebhook(merchantAccessToken, "https://your-webhook-endpoint53.com/webhook");
+            Optional<Map<String, Object>> existingWebhook = findExistingWebhook(merchantAccessToken, webhookEndpoint);
             if (existingWebhook.isPresent()) {
                 return ResponseEntity.ok(Map.of(
                         "created", false,
@@ -276,7 +281,7 @@ public class PayPalConnection {
                 .toList();
 
         Map<String, Object> payload = new HashMap<>();
-        payload.put("url", "https://your-webhook-endpoint54.com/webhook"); // Replace with your actual webhook URL
+        payload.put("url", webhookEndpoint); // Replace with your actual webhook URL
         payload.put("event_types", eventTypeList);
 
         HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
@@ -293,21 +298,6 @@ public class PayPalConnection {
         } else {
             throw new RuntimeException("Failed to create webhook: " + response.getStatusCode());
         }
-    }
-
-    private void deletePayPalWebhook(String webhookId) throws Exception {
-        String webhookUrl = mode.equals("sandbox") ?
-                "https://api.sandbox.paypal.com/v1/notifications/webhooks/" + webhookId :
-                "https://api.paypal.com/v1/notifications/webhooks/" + webhookId;
-
-        RestTemplate restTemplate = new RestTemplate();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(accessToken);
-
-        HttpEntity<String> request = new HttpEntity<>(headers);
-
-        restTemplate.exchange(webhookUrl, HttpMethod.DELETE, request, Void.class);
     }
 
     private Optional<Map<String, Object>> findExistingWebhook(String accessToken, String webhookUrl) throws Exception {
@@ -334,6 +324,56 @@ public class PayPalConnection {
         }
 
         return Optional.empty();
+    }
+
+
+    @PostMapping("/webhook/delete")
+    public ResponseEntity<Map<String, Object>> deleteWebhook(@RequestBody Map<String, String> payload) {
+        try {
+            String webhookId = payload.get("webhookId");
+
+            if (webhookId == null || webhookId.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                        "deleted", false,
+                        "message", "Webhook ID is required."
+                ));
+            }
+
+            // Call the helper method to delete the webhook
+            HttpStatus responseStatus = deletePayPalWebhook(webhookId);
+
+            if (responseStatus == HttpStatus.OK) {
+                return ResponseEntity.ok(Map.of(
+                        "deleted", true,
+                        "message", "Webhook deleted successfully"
+                ));
+            } else {
+                throw new RuntimeException("Failed to delete webhook: " + responseStatus);
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                    "deleted", false,
+                    "message", "Error deleting webhook: " + e.getMessage()
+            ));
+        }
+    }
+
+
+    private HttpStatus deletePayPalWebhook(String webhookId) throws Exception {
+        String webhookUrl = mode.equals("sandbox") ?
+                "https://api.sandbox.paypal.com/v1/notifications/webhooks/" + webhookId :
+                "https://api.paypal.com/v1/notifications/webhooks/" + webhookId;
+
+        RestTemplate restTemplate = new RestTemplate();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+
+        HttpEntity<String> request = new HttpEntity<>(headers);
+
+        ResponseEntity<Void> response = restTemplate.exchange(webhookUrl, HttpMethod.DELETE, request, Void.class);
+
+        return HttpStatus.valueOf(response.getStatusCode().value());  // Cast to HttpStatus
     }
 
 
