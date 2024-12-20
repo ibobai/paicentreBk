@@ -17,7 +17,7 @@ import java.util.Optional;
 
 @RestController
 //@CrossOrigin(origins = "http://localhost:3000")
-@CrossOrigin(origins = "https://sb1nxlpyh-tirr-boimpbp3--5173--c8c182a3.local-corp.webcontainer.io")
+@CrossOrigin(origins = "https://sb1nxlpyh-tirr--5173--c8c182a3.local-corp.webcontainer.io")
 
 @RequestMapping("/api/paypal/connection")
 public class PayPalConnection {
@@ -342,13 +342,16 @@ public class PayPalConnection {
             // Call the helper method to delete the webhook
             HttpStatus responseStatus = deletePayPalWebhook(webhookId);
 
-            if (responseStatus == HttpStatus.OK) {
+            if (responseStatus == HttpStatus.NO_CONTENT) {  // 204 No Content for successful deletion
                 return ResponseEntity.ok(Map.of(
                         "deleted", true,
                         "message", "Webhook deleted successfully"
                 ));
             } else {
-                throw new RuntimeException("Failed to delete webhook: " + responseStatus);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                        "deleted", false,
+                        "message", "Failed to delete webhook: " + responseStatus
+                ));
             }
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
@@ -359,6 +362,7 @@ public class PayPalConnection {
     }
 
 
+
     private HttpStatus deletePayPalWebhook(String webhookId) throws Exception {
         String webhookUrl = mode.equals("sandbox") ?
                 "https://api.sandbox.paypal.com/v1/notifications/webhooks/" + webhookId :
@@ -367,7 +371,7 @@ public class PayPalConnection {
         RestTemplate restTemplate = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(accessToken);
+        headers.setBearerAuth(getAccessTokenForApiCalls());
 
         HttpEntity<String> request = new HttpEntity<>(headers);
 

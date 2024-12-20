@@ -15,7 +15,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.util.*;
 
 @RestController
-@CrossOrigin(origins = "https://sb1nxlpyh-tirr-boimpbp3--5173--c8c182a3.local-corp.webcontainer.io")
+@CrossOrigin(origins = "https://sb1nxlpyh-tirr--5173--c8c182a3.local-corp.webcontainer.io")
 @RequestMapping("/api/stripe/connection")
 public class StripeConnection {
 
