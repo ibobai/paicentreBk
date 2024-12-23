@@ -1,4 +1,4 @@
-package com.phanta.paicentre;
+package com.phanta.paicentre.connection.paypal.beans;
 
 import com.google.gson.annotations.SerializedName;
 

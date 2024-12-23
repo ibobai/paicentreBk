@@ -1,23 +1,26 @@
-package com.phanta.paicentre;
+package com.phanta.paicentre.connection.stripe.service;
+
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.util.UriComponentsBuilder;
+import java.util.Optional;
 
-import java.util.*;
+@Service
+public class StripeConnectionService {
 
-@RestController
-@CrossOrigin(origins = "https://sb1nxlpyh-tirr--5173--c8c182a3.local-corp.webcontainer.io")
-@RequestMapping("/api/stripe/connection")
-public class StripeConnection {
 
     @Value("${stripe.client.id}")
     private String clientId;
@@ -34,10 +37,10 @@ public class StripeConnection {
     @Value("${cors.allowed.origin}")
     private String allowedOrigin;
 
+
     private static final String STRIPE_API_URL = "https://api.stripe.com/v1";
 
-    // Step 1: Redirect the user to Stripe's hosted OAuth page for onboarding
-    @GetMapping("/connect")
+
     public void redirectToStripeOAuth(HttpServletResponse response) throws IOException {
         // Stripe's hosted onboarding URL
         String stripeOAuthUrl = "https://connect.stripe.com/oauth/authorize";
@@ -54,13 +57,8 @@ public class StripeConnection {
         response.sendRedirect(authorizationUrl);
     }
 
-    @GetMapping("/helloo")
-    public String hello() {
-        return "Hello, connection is also working!";
-    }
 
 
-    @GetMapping("/oauth/callback")
     public void handleOAuthCallback(@RequestParam("code") String code, HttpServletResponse httpServletResponse) throws IOException {
         try {
             System.out.println("Received code: " + code);
@@ -109,7 +107,7 @@ public class StripeConnection {
 
                     // Redirect to the frontend with the account details
                     String frontendUrl = String.format(
-                      //      "http://localhost:5173/settings/webhooks?status=connected&source=stripe&client_id=%s&name=%s&email=%s",
+                            //      "http://localhost:5173/settings/webhooks?status=connected&source=stripe&client_id=%s&name=%s&email=%s",
                             allowedOrigin + "/settings/webhooks?status=connected&source=stripe&client_id=%s&name=%s&email=%s",
 
                             encodedAccountId, encodedName, encodedEmail
@@ -127,7 +125,7 @@ public class StripeConnection {
 
             // Handle errors and redirect to the frontend with the error message
             String errorMessage = URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8);
-          //  String frontendUrl = "http://localhost:5173/settings/webhooks?status=error&source=stripe&message=" + errorMessage;
+            //  String frontendUrl = "http://localhost:5173/settings/webhooks?status=error&source=stripe&message=" + errorMessage;
             String frontendUrl = allowedOrigin + "/settings/webhooks?status=error&source=stripe&message=" + errorMessage;
 
             httpServletResponse.sendRedirect(frontendUrl);
@@ -135,7 +133,6 @@ public class StripeConnection {
     }
 
 
-    @PostMapping("/webhook")
     public ResponseEntity<Map<String, Object>> createStripeWebhook(@RequestBody Map<String, Object> requestBody) {
         try {
             String accessToken = clientSecret; // Use your Stripe secret key as the access token
@@ -169,6 +166,8 @@ public class StripeConnection {
             ));
         }
     }
+
+
 
     private Map<String, Object> createStripeWebhook(String accessToken, List<String> events) throws Exception {
         String url = STRIPE_API_URL + "/webhook_endpoints";
@@ -220,8 +219,6 @@ public class StripeConnection {
     }
 
 
-
-    @PostMapping("/webhook/delete")
     public ResponseEntity<Map<String, Object>> deleteStripeWebhook(@RequestBody Map<String, String> requestBody) {
         try {
             String webhookId = requestBody.get("webhookId");
@@ -256,9 +253,5 @@ public class StripeConnection {
             ));
         }
     }
-
 }
-
-
-
 

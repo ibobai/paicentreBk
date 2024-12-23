@@ -1,6 +1,5 @@
-package com.phanta.paicentre;
+package com.phanta.paicentre.connection.stripe.service;
 
-import com.stripe.Stripe;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.model.*;
 import com.stripe.model.checkout.Session;
@@ -8,13 +7,15 @@ import com.stripe.net.Webhook;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.util.Optional;
 
-@RestController
-@RequestMapping("/api/stripe/controller")
-public class StripeWebhookController {
+@Service
+public class StripeWebhookService {
+
 
     @Value("${stripe.api.key}")
     private String apiKey;
@@ -22,16 +23,7 @@ public class StripeWebhookController {
     @Value("${stripe.webhook.secret}")
     private String endpointSecret;
 
-    // Constructor to initialize Stripe API key
-    public StripeWebhookController(@Value("${stripe.api.key}") String apiKey) {
-        Stripe.apiKey = apiKey;
-    }
 
-    @GetMapping("/hello")
-    public String hello(){
-        return  "Hello, it's working";
-    }
-    @PostMapping("/webhook")
     public ResponseEntity<String> handleStripeEvent(
             @RequestBody String payload,
             @RequestHeader("Stripe-Signature") String sigHeader) {

@@ -1,9 +1,11 @@
-package com.phanta.paicentre;
+package com.phanta.paicentre.connection.paypal.service;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
@@ -15,12 +17,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-@RestController
-//@CrossOrigin(origins = "http://localhost:3000")
-@CrossOrigin(origins = "https://sb1nxlpyh-tirr--5173--c8c182a3.local-corp.webcontainer.io")
+@Service
+public class PaypalConnectionService {
 
-@RequestMapping("/api/paypal/connection")
-public class PayPalConnection {
 
     // Read values from application.properties
     @Value("${paypal.clientId}")
@@ -43,9 +42,7 @@ public class PayPalConnection {
 
     private String accessToken; // To store the access token after authorization
 
-    // Step 1: Redirect to PayPal for Authorization
-    // Step 1: Redirect to PayPal for Authorization
-    @GetMapping("/connect")
+
     public void connectToPayPal(HttpServletResponse response) throws IOException {
         String baseUrl = mode.equals("sandbox") ? "sandbox.paypal.com" : "paypal.com";
 
@@ -61,15 +58,6 @@ public class PayPalConnection {
     }
 
 
-
-
-    @GetMapping("/hello")
-    public String hello(){
-        return  "Hello, it's working";
-    }
-
-    // Step 2: Handle OAuth callback
-    @GetMapping("/oauth/callback")
     public ResponseEntity<Void> handleOAuthCallback(@RequestParam(name = "code", required = false) String code) {
         try {
             if (code == null || code.isEmpty()) {
@@ -104,7 +92,7 @@ public class PayPalConnection {
 
             // Handle error and redirect to error page with a message
             String errorMessage = URLEncoder.encode(e.getMessage(), StandardCharsets.UTF_8);
-          //  String frontendErrorUrl = "http://localhost:5173/settings/webhooks?status=error&source=paypal&message=" + errorMessage;
+            //  String frontendErrorUrl = "http://localhost:5173/settings/webhooks?status=error&source=paypal&message=" + errorMessage;
             String frontendErrorUrl = allowedOrigin + "/settings/webhooks?status=error&source=paypal&message=" + errorMessage;
 
             return ResponseEntity.status(HttpStatus.FOUND)
@@ -112,6 +100,7 @@ public class PayPalConnection {
                     .build();
         }
     }
+
 
 
 
@@ -163,6 +152,7 @@ public class PayPalConnection {
     }
 
 
+
     // Helper Method: Exchange authorization code for access token
     private String getAccessToken(String authorizationCode) throws Exception {
         String tokenUrl = mode.equals("sandbox") ?
@@ -194,9 +184,6 @@ public class PayPalConnection {
 
 
 
-
-    // Step 3: Create a webhook
-    @PostMapping("/webhook")
     public ResponseEntity<Map<String, Object>> createWebhook(@RequestBody Map<String, Object> payload) {
         try {
             List<String> eventTypes = (List<String>) payload.get("events");
@@ -231,6 +218,7 @@ public class PayPalConnection {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Error creating webhook: " + e.getMessage()));
         }
+
     }
 
 
@@ -327,7 +315,7 @@ public class PayPalConnection {
     }
 
 
-    @PostMapping("/webhook/delete")
+
     public ResponseEntity<Map<String, Object>> deleteWebhook(@RequestBody Map<String, String> payload) {
         try {
             String webhookId = payload.get("webhookId");
@@ -361,8 +349,6 @@ public class PayPalConnection {
         }
     }
 
-
-
     private HttpStatus deletePayPalWebhook(String webhookId) throws Exception {
         String webhookUrl = mode.equals("sandbox") ?
                 "https://api.sandbox.paypal.com/v1/notifications/webhooks/" + webhookId :
@@ -379,6 +365,5 @@ public class PayPalConnection {
 
         return HttpStatus.valueOf(response.getStatusCode().value());  // Cast to HttpStatus
     }
-
 
 }

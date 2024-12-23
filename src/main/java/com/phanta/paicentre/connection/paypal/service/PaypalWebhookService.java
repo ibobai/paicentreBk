@@ -1,17 +1,22 @@
-package com.phanta.paicentre;
-
-
+package com.phanta.paicentre.connection.paypal.service;
 
 import com.google.gson.Gson;
+import com.phanta.paicentre.connection.paypal.beans.CustomAmount;
+import com.phanta.paicentre.connection.paypal.beans.CustomEvent;
+import com.phanta.paicentre.connection.paypal.beans.CustomResource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.client.RestTemplate;
+
 import java.util.HashMap;
 import java.util.Map;
-@RestController
-@RequestMapping("/api/paypal/events")
-public class PayPalWebhookController {
+
+@Service
+public class PaypalWebhookService {
+
 
     @Value("${paypal.clientId}")
     private  String CLIENT_ID;
@@ -21,8 +26,6 @@ public class PayPalWebhookController {
     private String WEBHOOK_ID;
 
     private final Gson gson = new Gson();
-
-    @PostMapping("/event")
     public void handlePayPalEvent(
             @RequestHeader("PayPal-Transmission-Sig") String transmissionSig,
             @RequestHeader("PayPal-Transmission-Id") String transmissionId,
@@ -69,6 +72,8 @@ public class PayPalWebhookController {
             System.err.println("Error processing webhook event: " + e.getMessage());
         }
     }
+
+
 
     private String getAccessToken() throws Exception {
         final String TOKEN_URL = "https://api.sandbox.paypal.com/v1/oauth2/token"; // Use live endpoint for production

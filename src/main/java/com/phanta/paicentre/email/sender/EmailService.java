@@ -2,6 +2,10 @@ package com.phanta.paicentre.email.sender;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.*;
 
@@ -63,6 +67,35 @@ public class EmailService {
                     "send", false,
                     "message", "Error sending email: " + e.getMessage()
             );
+        }
+    }
+
+
+    public ResponseEntity<Map<String, Object>> sendVerificationEmail(@RequestBody Map<String, String> request) {
+        String toEmail = request.get("email");
+        String token = request.get("token");
+
+        if (toEmail == null || token == null) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "send", false,
+                    "message", "Email and token are required."
+            ));
+        }
+
+        Map<String, Object> response = sendVerificationEmail(toEmail, token);
+        return ResponseEntity.ok(response);
+    }
+
+
+    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+        // Verify the token logic here
+        // boolean isVerified = tokenService.verifyToken(token);
+
+//if (isVerified) {
+        if(true) {
+            return ResponseEntity.ok("Email verified successfully!");
+        } else {
+            return ResponseEntity.badRequest().body("Invalid or expired token.");
         }
     }
 }
