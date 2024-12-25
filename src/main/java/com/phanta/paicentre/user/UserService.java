@@ -1,6 +1,7 @@
 package com.phanta.paicentre.user;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.phanta.paicentre.oauthToken.JwtTokenUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,11 +15,13 @@ import java.util.*;
 public class UserService {
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper; // Used for JSON parsing
+    private final JwtTokenUtil jwtTokenUtil;
 
     @Autowired
-    public UserService(UserRepository userRepository, ObjectMapper objectMapper) {
+    public UserService(UserRepository userRepository, ObjectMapper objectMapper, JwtTokenUtil jwtTokenUtil) {
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
+        this.jwtTokenUtil = jwtTokenUtil;
     }
 
     public List<User> getAllUsers() {
@@ -102,7 +105,6 @@ public class UserService {
     }
 
 
-
     /**
      * Validates an email address extracted from the request body.
      *
@@ -136,17 +138,36 @@ public class UserService {
         }
     }
 
+
+    /**
+     * Authenticates the user and returns the access token and refresh token.
+     *
+     * @param email    The email of the user
+     * @param password The password of the user
+     * @return ResponseEntity containing the validation result and tokens
+     */
     public ResponseEntity<Map<String, Object>> login(String email, String password) {
         Optional<User> userOptional = userRepository.findByEmail(email);
 
         Map<String, Object> response = new HashMap<>();
 
+        // If the user is found
         if (userOptional.isPresent()) {
             User user = userOptional.get();
-            // Directly compare the plain password with the stored password
+
+            // Check if the password matches (you should ideally hash passwords)
             if (password.equals(user.getPassword())) {
+
+                // Generate the access token and refresh token
+                String accessToken = jwtTokenUtil.generateAccessToken(email, user.getRole());
+                String refreshToken = jwtTokenUtil.generateRefreshToken(email);
+
+                // Prepare the response with the tokens
                 response.put("valid", true);
-                return ResponseEntity.ok(response);  // Return 200 OK with valid response
+                response.put("accessToken", accessToken);
+                response.put("refreshToken", refreshToken);
+
+                return ResponseEntity.ok(response);  // Return 200 OK with tokens
             } else {
                 response.put("valid", false);
                 response.put("message", "Invalid email or password");
