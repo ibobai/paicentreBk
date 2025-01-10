@@ -51,33 +51,43 @@ public class UserService {
     }
 
 
-
     public ResponseEntity<?> createUserDTO(UserRequestDTO userRequest) {
-        // Check if the email already exists
-        Optional<User> existingUser = userRepository.findByEmail(userRequest.getPersonal().getEmail());
-        if (existingUser.isPresent()) {
-            // Return a bad request response with the existing user's ID
+        try {
+            // Check if the email already exists
+            Optional<User> existingUser = userRepository.findByEmail(userRequest.getPersonal().getEmail());
+            if (existingUser.isPresent()) {
+                // Return a bad request response with the existing user's ID
+                return ResponseEntity.badRequest().body(
+                        Map.of(
+                                "message", "User already exists",
+                                "userId", "USR_" + existingUser.get().getId()
+                        )
+                );
+            }
+
+            // Map the personal info from the DTO to the User object
+            User user = new User();
+            user.setFirstName(userRequest.getPersonal().getFirstName());
+            user.setLastName(userRequest.getPersonal().getLastName());
+            user.setEmail(userRequest.getPersonal().getEmail());
+            user.setPhoneNumber(userRequest.getPersonal().getPhone());
+            user.setPassword(userRequest.getPersonal().getPassword());
+            user.setSex(userRequest.getPersonal().getSex());
+            user.setDateOfBirth(LocalDate.of(2000, 2, 2));
+
+            // Save the new user
+            User savedUser = userRepository.save(user);
+            return ResponseEntity.ok(savedUser);
+
+        } catch (Exception ex) {
+            // Return a bad request response with the error message
             return ResponseEntity.badRequest().body(
                     Map.of(
-                            "message", "User already exists",
-                            "userId", "USR_" + existingUser.get().getId()
+                            "error", "Unable to create user",
+                            "message", ex.getMessage()
                     )
             );
         }
-
-        // Map the personal info from the DTO to the User object
-        User user = new User();
-        user.setFirstName(userRequest.getPersonal().getFirstName());
-        user.setLastName(userRequest.getPersonal().getLastName());
-        user.setEmail(userRequest.getPersonal().getEmail());
-        user.setPhoneNumber(userRequest.getPersonal().getPhone());
-        user.setPassword(userRequest.getPersonal().getPassword());
-        user.setSex(userRequest.getPersonal().getSex());
-        user.setDateOfBirth(LocalDate.of(2000, 02, 02));
-
-        // Save the new user
-        User savedUser = userRepository.save(user);
-        return ResponseEntity.ok(savedUser);
     }
 
 

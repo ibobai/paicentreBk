@@ -14,7 +14,7 @@ public class WebConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:5173", "https://6604-2a02-842a-112f-3301-240e-4378-11f2-43a6.ngrok-free.app")
+                        .allowedOrigins("http://localhost:5173", "https://6216-2a02-842a-112f-3301-86a1-d9a0-e642-b644.ngrok-free.app")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
                         .allowCredentials(true);

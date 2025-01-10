@@ -1,16 +1,15 @@
 package com.phanta.paicentre.config;
+
 import com.phanta.paicentre.oauthToken.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
 
 @Configuration
 @EnableMethodSecurity // Enables role-based method security using annotations like @Secured or @PreAuthorize
@@ -22,37 +21,26 @@ public class SecurityConfig {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
-    /**
-     * Configure HTTP security for the application.
-     * - Disable CSRF as we're using JWT (stateless authentication).
-     * - Define public and restricted endpoints.
-     * - Use a stateless session policy.
-     * - Add the JWT authentication filter to validate tokens.
-     */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, CustomAuthenticationEntryPoint customEntryPoint) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable) // Updated approach for disabling CSRF
+                .csrf(csrf -> csrf.disable()) // Disable CSRF as we're using JWT (stateless authentication)
                 .authorizeHttpRequests(authorize -> authorize
-                        // Permit login and refresh token endpoints without authentication
-                        .requestMatchers("/api/auth/login", "/api/auth/refresh", "/api/user/createDTO").permitAll()
-                        // Restrict the secure endpoint to admin users only
-                        .requestMatchers("/api/auth/secure").hasRole("ADMIN")
-                        // All other requests require authentication
-                        .anyRequest().authenticated()
+                        .requestMatchers("/api/auth/login", "/api/auth/refresh", "/api/user/createDTO").permitAll() // Public endpoints
+                        .requestMatchers("/api/auth/secure").hasRole("ADMIN") // Restricted to admins
+                        .anyRequest().authenticated() // All other requests require authentication
+                )
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(customEntryPoint) // Use custom entry point
                 )
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // JWT is stateless; no session needed
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS) // Stateless sessions
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // Add JWT filter before the default authentication filter
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // Add JWT filter
 
         return http.build();
     }
 
-    /**
-     * Password encoder bean to hash passwords securely.
-     * Use this wherever passwords are stored or compared.
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
