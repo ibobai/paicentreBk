@@ -1,11 +1,16 @@
 package com.phanta.paicentre.user;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+
+import static org.springframework.util.ObjectUtils.isEmpty;
 
 @CrossOrigin(origins = " http://localhost:5173")
 @RestController
@@ -24,10 +29,19 @@ public class UserController {
     }
 
     @GetMapping("/get/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable String id) {
-        return userService.getUserById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+    public ResponseEntity<Object> getUserById(@PathVariable String id) {
+        Optional<User> user = userService.getUserById(id);
+        if (user.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of(
+                            "timestamp", LocalDateTime.now(),
+                            "status", HttpStatus.NOT_FOUND.value(),
+                            "error", "Not Found",
+                            "message", "User not found",
+                            "path", "/api/user/" + id
+                    ));
+        }
+        return ResponseEntity.ok(user.get());
     }
 
     @PostMapping("/create")
@@ -41,16 +55,33 @@ public class UserController {
         return userService.createUserDTO(userRequest);
     }
 
+//    @PutMapping("/update/{id}")
+//    public ResponseEntity<Object> updateUser(@PathVariable String id, @RequestBody UserRequestDTO userRequestDTO) {
+//        if (userRequestDTO == null || isEmpty(userRequestDTO)) {
+//            return ResponseEntity.badRequest().body(Map.of(
+//                    "timestamp", LocalDateTime.now(),
+//                    "status", HttpStatus.BAD_REQUEST.value(),
+//                    "error", "Bad Request",
+//                    "message", "No fields to update or all fields are empty",
+//                    "path", "/api/user/update/" + id
+//            ));
+//        }
+//
+//        try {
+//            // Call the service to update the user
+//            User updatedUser = userService.updateUser(id, userRequestDTO);
+//            return ResponseEntity.ok(updatedUser);
+//        } catch (RuntimeException e) {
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+//                    "timestamp", LocalDateTime.now(),
+//                    "status", HttpStatus.NOT_FOUND.value(),
+//                    "error", "Not Found",
+//                    "message", "User not found with ID: " + id,
+//                    "path", "/api/user/update/" + id
+//            ));
+//        }
+//    }
 
-    @PutMapping("/update/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable String id, @RequestBody User userDetails) {
-        try {
-            User updatedUser = userService.updateUser(id, userDetails);
-            return ResponseEntity.ok(updatedUser);
-        } catch (RuntimeException e) {
-            return ResponseEntity.notFound().build();
-        }
-    }
 
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable String id) {

@@ -1,27 +1,92 @@
 package com.phanta.paicentre.user;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+
 public class UserRequestDTO {
-    private PersonalInfo personal;
-    private BusinessInfo business;
+    private String firstName;
+    private String lastName;
+    private String email;
+    private String phoneNumber;
+    private String password;
+    private String sex;
+    private Boolean isActive;
+    private String role;
+    private LocalDate dateOfBirth;
     private AddressInfo address;
-    private PreferencesInfo preferences;
+    private UserPreferencesInfo userPreferences;
+    private ProfileInfo profile;
 
-
-
-    public PersonalInfo getPersonal() {
-        return personal;
+    public Boolean getActive() {
+        return isActive;
     }
 
-    public void setPersonal(PersonalInfo personal) {
-        this.personal = personal;
+    public void setActive(Boolean active) {
+        isActive = active;
     }
 
-    public BusinessInfo getBusiness() {
-        return business;
+    public String getRole() {
+        return role;
     }
 
-    public void setBusiness(BusinessInfo business) {
-        this.business = business;
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public String getSex() {
+        return sex;
+    }
+
+    public void setSex(String sex) {
+        this.sex = sex;
+    }
+
+    public LocalDate getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(LocalDate dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
     }
 
     public AddressInfo getAddress() {
@@ -32,105 +97,20 @@ public class UserRequestDTO {
         this.address = address;
     }
 
-    public PreferencesInfo getPreferences() {
-        return preferences;
+    public UserPreferencesInfo getUserPreferences() {
+        return userPreferences;
     }
 
-    public void setPreferences(PreferencesInfo preferences) {
-        this.preferences = preferences;
+    public void setUserPreferences(UserPreferencesInfo userPreferences) {
+        this.userPreferences = userPreferences;
     }
 
-    // Getters and setters for all fields
-
-    public static class PersonalInfo {
-        private String firstName;
-        private String lastName;
-        private String email;
-        private String phone;
-        private String password;
-        private String sex;
-
-        public String getLastName() {
-            return lastName;
-        }
-
-        public void setLastName(String lastName) {
-            this.lastName = lastName;
-        }
-
-        public String getFirstName() {
-            return firstName;
-        }
-
-        public void setFirstName(String firstName) {
-            this.firstName = firstName;
-        }
-
-        public String getEmail() {
-            return email;
-        }
-
-        public void setEmail(String email) {
-            this.email = email;
-        }
-
-        public String getPhone() {
-            return phone;
-        }
-
-        public void setPhone(String phone) {
-            this.phone = phone;
-        }
-
-        public String getPassword() {
-            return password;
-        }
-
-        public void setPassword(String password) {
-            this.password = password;
-        }
-
-        public String getSex() {
-            return sex;
-        }
-
-        public void setSex(String sex) {
-            this.sex = sex;
-        }
-
-        // Getters and setters
+    public ProfileInfo getProfile() {
+        return profile;
     }
 
-    public static class BusinessInfo {
-        private String type;
-        private String companyType;
-        private String activityType;
-
-        public String getActivityType() {
-            return activityType;
-        }
-
-        public void setActivityType(String activityType) {
-            this.activityType = activityType;
-        }
-
-        public String getCompanyType() {
-            return companyType;
-        }
-
-        public void setCompanyType(String companyType) {
-            this.companyType = companyType;
-        }
-
-        public String getType() {
-            return type;
-        }
-
-        public void setType(String type) {
-            this.type = type;
-        }
-
-        // Getters and setters
+    public void setProfile(ProfileInfo profile) {
+        this.profile = profile;
     }
 
     public static class AddressInfo {
@@ -139,6 +119,8 @@ public class UserRequestDTO {
         private String state;
         private String country;
         private String postalCode;
+        private double latitude;
+        private double longitude;
 
         public String getStreet() {
             return street;
@@ -180,29 +162,107 @@ public class UserRequestDTO {
             this.postalCode = postalCode;
         }
 
-        // Getters and setters
+        public double getLatitude() {
+            return latitude;
+        }
+
+        public void setLatitude(double latitude) {
+            this.latitude = latitude;
+        }
+
+        public double getLongitude() {
+            return longitude;
+        }
+
+        public void setLongitude(double longitude) {
+            this.longitude = longitude;
+        }
     }
 
-    public static class PreferencesInfo {
-        private boolean acceptTerms;
-        private boolean newsletter;
+    public static class UserPreferencesInfo {
+        private String language;
+        private String currency;
+        private boolean notificationsEnabled;
+        private boolean isTaxingPeople;
+        private BigDecimal taxPercentage;
 
-        public boolean isAcceptTerms() {
-            return acceptTerms;
+        public String getLanguage() {
+            return language;
         }
 
-        public void setAcceptTerms(boolean acceptTerms) {
-            this.acceptTerms = acceptTerms;
+        public void setLanguage(String language) {
+            this.language = language;
         }
 
-        public boolean isNewsletter() {
-            return newsletter;
+        public String getCurrency() {
+            return currency;
         }
 
-        public void setNewsletter(boolean newsletter) {
-            this.newsletter = newsletter;
+        public void setCurrency(String currency) {
+            this.currency = currency;
         }
 
-        // Getters and setters
+        public boolean isNotificationsEnabled() {
+            return notificationsEnabled;
+        }
+
+        public void setNotificationsEnabled(boolean notificationsEnabled) {
+            this.notificationsEnabled = notificationsEnabled;
+        }
+
+        public boolean isTaxingPeople() {
+            return isTaxingPeople;
+        }
+
+        public void setTaxingPeople(boolean taxingPeople) {
+            isTaxingPeople = taxingPeople;
+        }
+
+        public BigDecimal getTaxPercentage() {
+            return taxPercentage;
+        }
+
+        public void setTaxPercentage(BigDecimal taxPercentage) {
+            this.taxPercentage = taxPercentage;
+        }
+    }
+
+    public static class ProfileInfo {
+        private String profilePictureUrl;
+        private boolean isSelfEmployed;
+        private String companyType;
+        private String activityType;
+
+        public String getProfilePictureUrl() {
+            return profilePictureUrl;
+        }
+
+        public void setProfilePictureUrl(String profilePictureUrl) {
+            this.profilePictureUrl = profilePictureUrl;
+        }
+
+        public boolean isSelfEmployed() {
+            return isSelfEmployed;
+        }
+
+        public void setSelfEmployed(boolean selfEmployed) {
+            isSelfEmployed = selfEmployed;
+        }
+
+        public String getCompanyType() {
+            return companyType;
+        }
+
+        public void setCompanyType(String companyType) {
+            this.companyType = companyType;
+        }
+
+        public String getActivityType() {
+            return activityType;
+        }
+
+        public void setActivityType(String activityType) {
+            this.activityType = activityType;
+        }
     }
 }

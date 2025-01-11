@@ -1,5 +1,8 @@
 package com.phanta.paicentre.user;
 
+import com.phanta.paicentre.address.Address;
+import com.phanta.paicentre.userPreference.UserPreferences;
+import com.phanta.paicentre.profile.Profile;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -8,6 +11,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -55,10 +59,19 @@ public class User {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-
-
     @Column(name = "role", nullable = false)
     private String role = "ROLE_USER"; // Default role
+
+    // Relationships
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private Address address;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private UserPreferences preferences;
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    private Profile profile;
+
 
     @PrePersist
     public void generateId() {
@@ -73,7 +86,6 @@ public class User {
         this.updatedAt = LocalDateTime.now();
     }
 
-    // Getters and Setters
     public String getId() {
         return id;
     }
@@ -114,14 +126,6 @@ public class User {
         this.phoneNumber = phoneNumber;
     }
 
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
     public String getSex() {
         return sex;
     }
@@ -138,6 +142,14 @@ public class User {
         this.dateOfBirth = dateOfBirth;
     }
 
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
     public Boolean getEmailVerified() {
         return emailVerified;
     }
@@ -146,12 +158,12 @@ public class User {
         this.emailVerified = emailVerified;
     }
 
-    public Boolean getIsActive() {
+    public Boolean getActive() {
         return isActive;
     }
 
-    public void setIsActive(Boolean isActive) {
-        this.isActive = isActive;
+    public void setActive(Boolean active) {
+        isActive = active;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -178,11 +190,27 @@ public class User {
         this.role = role;
     }
 
-    public Boolean getActive() {
-        return isActive;
+    public UserPreferences getPreferences() {
+        return preferences;
     }
 
-    public void setActive(Boolean active) {
-        isActive = active;
+    public void setPreferences(UserPreferences preferences) {
+        this.preferences = preferences;
+    }
+
+    public Profile getProfile() {
+        return profile;
+    }
+
+    public void setProfile(Profile profile) {
+        this.profile = profile;
+    }
+
+    public Address getAddress() {
+        return address;
+    }
+
+    public void setAddress(Address address) {
+        this.address = address;
     }
 }
