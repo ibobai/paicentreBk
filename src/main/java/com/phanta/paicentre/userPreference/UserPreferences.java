@@ -1,5 +1,6 @@
 package com.phanta.paicentre.userPreference;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.phanta.paicentre.user.User;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -14,7 +15,8 @@ public class UserPreferences {
     @Column(nullable = false, unique = true, updatable = false)
     private String id; // Database will handle this field with a default value.
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
+    @JsonIgnore  // To avoid circular references during serialization
     @JoinColumn(name = "user_id", nullable = false) // Foreign key column in snake_case
     private User user;
 

@@ -1,5 +1,6 @@
 package com.phanta.paicentre.user;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.phanta.paicentre.address.Address;
 import com.phanta.paicentre.userPreference.UserPreferences;
 import com.phanta.paicentre.profile.Profile;
@@ -63,13 +64,16 @@ public class User {
     private String role = "ROLE_USER"; // Default role
 
     // Relationships
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore  // To avoid circular references during serialization
     private Address address;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore  // To avoid circular references during serialization
     private UserPreferences preferences;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnore  // To avoid circular references during serialization
     private Profile profile;
 
 
