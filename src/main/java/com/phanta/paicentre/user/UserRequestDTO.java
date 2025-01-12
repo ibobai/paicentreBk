@@ -1,5 +1,21 @@
 package com.phanta.paicentre.user;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.phanta.paicentre.address.AddressDTO;
+import com.phanta.paicentre.address.AddressRepository;
+import com.phanta.paicentre.oauthToken.JwtTokenUtil;
+import com.phanta.paicentre.profile.ProfileDTO;
+import com.phanta.paicentre.profile.ProfileRepository;
+import com.phanta.paicentre.userPreference.UserPreferencesDTO;
+
+
+import com.phanta.paicentre.address.Address;
+import com.phanta.paicentre.profile.Profile;
+import com.phanta.paicentre.userPreference.UserPreferences;
+import com.phanta.paicentre.userPreference.UserPreferencesRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -17,11 +33,28 @@ public class UserRequestDTO {
     private UserPreferencesInfo userPreferences;
     private ProfileInfo profile;
 
-    public Boolean getActive() {
+    private final UserRepository userRepository;
+    private final UserPreferencesRepository userPreferencesRepository;
+    private final ProfileRepository profileRepository;
+    private final AddressRepository addressRepository;
+
+    @Autowired
+    public UserRequestDTO(UserRepository userRepository,
+                          UserPreferencesRepository userPreferencesRepository,
+                          ProfileRepository profileRepository,
+                          AddressRepository addressRepository) {
+        this.userRepository = userRepository;
+        this.userPreferencesRepository = userPreferencesRepository;
+        this.profileRepository = profileRepository;
+        this.addressRepository = addressRepository;
+    }
+
+
+    public Boolean getIsActive() {
         return isActive;
     }
 
-    public void setActive(Boolean active) {
+    public void setIsActive(Boolean active) {
         isActive = active;
     }
 
@@ -265,4 +298,84 @@ public class UserRequestDTO {
             this.activityType = activityType;
         }
     }
+
+
+    public static UserResponseDTO getSavedUserDTO(User savedUser){
+        // Return the saved user with all relationships
+        // After saving the user and all related objects
+        UserResponseDTO responseDTO = new UserResponseDTO();
+        responseDTO.setId(savedUser.getId());
+        responseDTO.setFirstName(savedUser.getFirstName());
+        responseDTO.setLastName(savedUser.getLastName());
+        responseDTO.setEmail(savedUser.getEmail());
+        responseDTO.setPhoneNumber(savedUser.getPhoneNumber());
+        responseDTO.setSex(savedUser.getSex());
+        responseDTO.setDateOfBirth(savedUser.getDateOfBirth().toString());
+        responseDTO.setCreatedAt(savedUser.getCreatedAt());
+        responseDTO.setUpdatedAt(savedUser.getUpdatedAt());
+        responseDTO.setIsActive(savedUser.getIsActive());
+        responseDTO.setRole(savedUser.getRole());
+
+
+        // Add UserPreferences if available
+        if (savedUser.getPreferences() != null) {
+            UserPreferencesDTO userPreferencesDTO = new UserPreferencesDTO();
+            userPreferencesDTO.setLanguage(savedUser.getPreferences().getLanguage());
+            userPreferencesDTO.setId(savedUser.getPreferences().getId());
+            userPreferencesDTO.setUserId(savedUser.getId());
+            userPreferencesDTO.setCurrency(savedUser.getPreferences().getCurrency());
+            userPreferencesDTO.setNotificationsEnabled(savedUser.getPreferences().getNotificationsEnabled());
+            userPreferencesDTO.setTaxingPeople(savedUser.getPreferences().getTaxingPeople());
+            userPreferencesDTO.setTaxPercentage(savedUser.getPreferences().getTaxPercentage());
+
+            responseDTO.setPreferences(userPreferencesDTO);
+        }
+
+        // Assuming savedUser is already fetched from the database
+
+        // Check if the address is available
+        if (savedUser.getAddress() != null) {
+            // Create a new AddressDTO object
+            AddressDTO addressDTO = new AddressDTO();
+            // Set the address details from the saved user
+            addressDTO.setUserId(savedUser.getId());  // Set userId from savedUser (this will be the user linked to the address)
+            addressDTO.setStreet(savedUser.getAddress().getStreet());  // Set street from the saved user's address
+            addressDTO.setCity(savedUser.getAddress().getCity());  // Set city
+            addressDTO.setState(savedUser.getAddress().getState());  // Set state
+            addressDTO.setCountry(savedUser.getAddress().getCountry());  // Set country
+            addressDTO.setPostalCode(savedUser.getAddress().getPostalCode());  // Set postalCode
+            addressDTO.setLatitude(savedUser.getAddress().getLatitude());  // Set latitude
+            addressDTO.setLongitude(savedUser.getAddress().getLongitude());  // Set longitude
+            addressDTO.setId(savedUser.getAddress().getId());
+            // Set the addressDTO in the responseDTO
+            responseDTO.setAddress(addressDTO);
+        }
+
+
+        // Assuming savedUser is already fetched from the database
+
+        // Check if the profile is available
+        if (savedUser.getProfile() != null) {
+            // Create a new ProfileDTO object
+            ProfileDTO profileDTO = new ProfileDTO();
+
+            // Set profile details from the saved user
+            profileDTO.setUserId(savedUser.getId());  // Set the userId from savedUser (this links the profile to the user)
+            profileDTO.setProfilePictureUrl(savedUser.getProfile().getProfilePictureUrl());  // Set profile picture URL
+            profileDTO.setIsSelfEmployed(savedUser.getProfile().getSelfEmployed());  // Set self-employment status
+            profileDTO.setCompanyType(savedUser.getProfile().getCompanyType());  // Set company type
+            profileDTO.setActivityType(savedUser.getProfile().getActivityType());  // Set activity type
+            profileDTO.setId(savedUser.getProfile().getId());  // Set activity type
+            // Set the profileDTO in the responseDTO
+            responseDTO.setProfile(profileDTO);
+        }
+
+
+        // Return the custom response DTO
+        return responseDTO;
+    }
+
+
+
+
 }

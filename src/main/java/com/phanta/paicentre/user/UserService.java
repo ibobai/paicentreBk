@@ -16,7 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import com.phanta.paicentre.user.UserRequestDTO;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -72,30 +72,7 @@ public class UserService {
 
     @Transactional
     public ResponseEntity<?> createUserDTO(UserRequestDTO userRequest) {
-        try {
-            // Validate required fields
-            if (userRequest.getFirstName() == null || userRequest.getFirstName().isEmpty()) {
-                return buildErrorResponse("Field 'firstName' is required");
-            }
-            if (userRequest.getLastName() == null || userRequest.getLastName().isEmpty()) {
-                return buildErrorResponse("Field 'lastName' is required");
-            }
-            if (userRequest.getEmail() == null || userRequest.getEmail().isEmpty()) {
-                return buildErrorResponse("Field 'email' is required");
-            }
-            if (userRequest.getPhoneNumber() == null || userRequest.getPhoneNumber().isEmpty()) {
-                return buildErrorResponse("Field 'phoneNumber' is required");
-            }
-            if (userRequest.getPassword() == null || userRequest.getPassword().isEmpty()) {
-                return buildErrorResponse("Field 'password' is required");
-            }
-            if (userRequest.getSex() == null || userRequest.getSex().isEmpty()) {
-                return buildErrorResponse("Field 'sex' is required");
-            }
-            if (userRequest.getDateOfBirth() == null || userRequest.getDateOfBirth().toString().isEmpty()) {
-                return buildErrorResponse("Field 'dateOfBirth' is required");
-            }
-
+        try{
             // Check if the email already exists
             Optional<User> existingUser = userRepository.findByEmail(userRequest.getEmail());
             if (existingUser.isPresent()) {
@@ -111,148 +88,10 @@ public class UserService {
                 );
             }
 
-            // Import necessary classes
 
 
             // Map the personal info from the DTO to the User object
-            User user = new User();
-            user.setFirstName(userRequest.getFirstName());
-            user.setLastName(userRequest.getLastName());
-            user.setEmail(userRequest.getEmail());
-            user.setPhoneNumber(userRequest.getPhoneNumber());
-            user.setPassword(userRequest.getPassword());
-            user.setSex(userRequest.getSex());
-            //user.setActive(userRequest.getActive());
-            //user.setRole(userRequest.getRole());
-            user.setDateOfBirth(userRequest.getDateOfBirth()); // Convert the date string to LocalDate
-
-            // Save user first to generate the ID
-            User savedUser = userRepository.save(user);
-
-            // Map preferences if available and save them
-            if (userRequest.getUserPreferences() != null) {
-                UserPreferences userPreferences = new UserPreferences();
-                userPreferences.setLanguage(userRequest.getUserPreferences().getLanguage());
-                userPreferences.setCurrency(userRequest.getUserPreferences().getCurrency());
-                userPreferences.setNotificationsEnabled(userRequest.getUserPreferences().isNotificationsEnabled());
-                userPreferences.setTaxingPeople(userRequest.getUserPreferences().isTaxingPeople());
-                userPreferences.setTaxPercentage(userRequest.getUserPreferences().getTaxPercentage());
-                userPreferences.setUser(savedUser);  // Set the user for the preferences
-
-                // Save the user preferences
-                userPreferencesRepository.save(userPreferences);
-
-                // Set the preferences for the user
-                savedUser.setPreferences(userPreferences);
-            }
-
-            // Map the address if available
-            if (userRequest.getAddress() != null) {
-                Address address = new Address();
-                address.setStreet(userRequest.getAddress().getStreet());
-                address.setCity(userRequest.getAddress().getCity());
-                address.setState(userRequest.getAddress().getState());
-                address.setCountry(userRequest.getAddress().getCountry());
-                address.setPostalCode(userRequest.getAddress().getPostalCode());
-                address.setLatitude(userRequest.getAddress().getLatitude());
-                address.setLongitude(userRequest.getAddress().getLongitude());
-                address.setUser(savedUser);  // Set the user for the address
-
-                // Save the address
-                addressRepository.save(address);
-
-                // Set the address for the user
-                savedUser.setAddress(address);
-            }
-
-            // Map profile if available
-            if (userRequest.getProfile() != null) {
-                Profile profile = new Profile();
-                profile.setProfilePictureUrl(userRequest.getProfile().getProfilePictureUrl());
-                profile.setSelfEmployed(userRequest.getProfile().isSelfEmployed());
-                profile.setCompanyType(userRequest.getProfile().getCompanyType());
-                profile.setActivityType(userRequest.getProfile().getActivityType());
-                profile.setUser(savedUser);  // Set the user for the profile
-
-                // Save the profile
-                profileRepository.save(profile);
-
-                // Set the profile for the user
-                savedUser.setProfile(profile);
-            }
-
-            // Return the saved user with all relationships
-            // After saving the user and all related objects
-            UserResponseDTO responseDTO = new UserResponseDTO();
-            responseDTO.setId(savedUser.getId());
-            responseDTO.setFirstName(savedUser.getFirstName());
-            responseDTO.setLastName(savedUser.getLastName());
-            responseDTO.setEmail(savedUser.getEmail());
-            responseDTO.setPhoneNumber(savedUser.getPhoneNumber());
-            responseDTO.setSex(savedUser.getSex());
-            responseDTO.setDateOfBirth(savedUser.getDateOfBirth().toString());
-            responseDTO.setCreatedAt(savedUser.getCreatedAt());
-            responseDTO.setUpdatedAt(savedUser.getUpdatedAt());
-            responseDTO.setIsActive(savedUser.getActive());
-            responseDTO.setRole(savedUser.getRole());
-
-
-            // Add UserPreferences if available
-            if (savedUser.getPreferences() != null) {
-                UserPreferencesDTO userPreferencesDTO = new UserPreferencesDTO();
-                userPreferencesDTO.setLanguage(savedUser.getPreferences().getLanguage());
-                userPreferencesDTO.setId(savedUser.getPreferences().getId());
-                userPreferencesDTO.setUserId(savedUser.getId());
-                userPreferencesDTO.setCurrency(savedUser.getPreferences().getCurrency());
-                userPreferencesDTO.setNotificationsEnabled(savedUser.getPreferences().getNotificationsEnabled());
-                userPreferencesDTO.setTaxingPeople(savedUser.getPreferences().getTaxingPeople());
-                userPreferencesDTO.setTaxPercentage(savedUser.getPreferences().getTaxPercentage());
-
-                responseDTO.setPreferences(userPreferencesDTO);
-            }
-
-            // Assuming savedUser is already fetched from the database
-
-            // Check if the address is available
-            if (savedUser.getAddress() != null) {
-                // Create a new AddressDTO object
-                AddressDTO addressDTO = new AddressDTO();
-                // Set the address details from the saved user
-                addressDTO.setUserId(savedUser.getId());  // Set userId from savedUser (this will be the user linked to the address)
-                addressDTO.setStreet(savedUser.getAddress().getStreet());  // Set street from the saved user's address
-                addressDTO.setCity(savedUser.getAddress().getCity());  // Set city
-                addressDTO.setState(savedUser.getAddress().getState());  // Set state
-                addressDTO.setCountry(savedUser.getAddress().getCountry());  // Set country
-                addressDTO.setPostalCode(savedUser.getAddress().getPostalCode());  // Set postalCode
-                addressDTO.setLatitude(savedUser.getAddress().getLatitude());  // Set latitude
-                addressDTO.setLongitude(savedUser.getAddress().getLongitude());  // Set longitude
-                addressDTO.setId(savedUser.getAddress().getId());
-                // Set the addressDTO in the responseDTO
-                responseDTO.setAddress(addressDTO);
-            }
-
-
-            // Assuming savedUser is already fetched from the database
-
-            // Check if the profile is available
-            if (savedUser.getProfile() != null) {
-                // Create a new ProfileDTO object
-                ProfileDTO profileDTO = new ProfileDTO();
-
-                // Set profile details from the saved user
-                profileDTO.setUserId(savedUser.getId());  // Set the userId from savedUser (this links the profile to the user)
-                profileDTO.setProfilePictureUrl(savedUser.getProfile().getProfilePictureUrl());  // Set profile picture URL
-                profileDTO.setIsSelfEmployed(savedUser.getProfile().getSelfEmployed());  // Set self-employment status
-                profileDTO.setCompanyType(savedUser.getProfile().getCompanyType());  // Set company type
-                profileDTO.setActivityType(savedUser.getProfile().getActivityType());  // Set activity type
-                profileDTO.setId(savedUser.getProfile().getId());  // Set activity type
-                // Set the profileDTO in the responseDTO
-                responseDTO.setProfile(profileDTO);
-            }
-
-
-            // Return the custom response DTO
-            return ResponseEntity.ok(responseDTO);
+            return ResponseEntity.ok(UserRequestDTO.getSavedUserDTO(mapAndSaveUserWithAllDetails(userRequest)));
 
 
         } catch (Exception ex) {
@@ -267,21 +106,10 @@ public class UserService {
                     )
             );
         }
+
     }
 
 
-    // Helper method for error response
-    private ResponseEntity<Map<String, Object>> buildErrorResponse(String message) {
-        return ResponseEntity.badRequest().body(
-                Map.of(
-                        "timestamp", LocalDateTime.now(),
-                        "status", HttpStatus.BAD_REQUEST.value(),
-                        "error", "Bad Request",
-                        "message", message,
-                        "path", "/api/user/createDTO"
-                )
-        );
-    }
 
 //    public User updateUser(String id, UserRequestDTO userRequestDTO) {
 //        Optional<User> existingUserOpt = userRepository.findById(id);
@@ -443,5 +271,86 @@ public class UserService {
         response.put("valid", false);
         response.put("message", "Invalid email or password");
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);  // Return 401 Unauthorized
+    }
+
+    public User mapAndSaveUserWithAllDetails(UserRequestDTO userRequest) {
+        // Map and save basic user details and generate ID
+        User savedUser = mapAndSaveUserDetails(userRequest);
+
+        // Map and save preferences if provided
+        mapAndSaveUserPreferences(userRequest, savedUser);
+
+        // Map and save address if provided
+        mapAndSaveUserAddress(userRequest, savedUser);
+
+        // Map and save profile if provided
+        mapAndSaveUserProfile(userRequest, savedUser);
+
+        return savedUser;
+    }
+
+    private User mapAndSaveUserDetails(UserRequestDTO userRequest) {
+        User user = new User();
+        user.setFirstName(userRequest.getFirstName());
+        user.setLastName(userRequest.getLastName());
+        user.setEmail(userRequest.getEmail());
+        user.setPhoneNumber(userRequest.getPhoneNumber());
+        user.setPassword(userRequest.getPassword());
+        user.setSex(userRequest.getSex().toUpperCase());
+        user.setIsActive(userRequest.getIsActive());
+        user.setRole(userRequest.getRole());
+        user.setDateOfBirth(userRequest.getDateOfBirth());
+        return userRepository.save(user); // Save and return the user to generate the ID
+    }
+
+    private void mapAndSaveUserPreferences(UserRequestDTO userRequest, User savedUser) {
+        if (userRequest.getUserPreferences() != null) {
+            UserPreferences userPreferences = new UserPreferences();
+            userPreferences.setLanguage(userRequest.getUserPreferences().getLanguage());
+            userPreferences.setCurrency(userRequest.getUserPreferences().getCurrency());
+            userPreferences.setNotificationsEnabled(userRequest.getUserPreferences().isNotificationsEnabled());
+            userPreferences.setTaxingPeople(userRequest.getUserPreferences().isTaxingPeople());
+            userPreferences.setTaxPercentage(userRequest.getUserPreferences().getTaxPercentage());
+            userPreferences.setUser(savedUser);
+            userPreferencesRepository.save(userPreferences);
+
+            // Set preferences back to the user for reference
+            savedUser.setPreferences(userPreferences);
+        }
+    }
+
+    private void mapAndSaveUserAddress(UserRequestDTO userRequest, User savedUser) {
+        if (userRequest.getAddress() != null) {
+            Address address = new Address();
+            address.setStreet(userRequest.getAddress().getStreet());
+            address.setCity(userRequest.getAddress().getCity());
+            address.setState(userRequest.getAddress().getState());
+            address.setCountry(userRequest.getAddress().getCountry());
+            address.setPostalCode(userRequest.getAddress().getPostalCode());
+            address.setLatitude(userRequest.getAddress().getLatitude());
+            address.setLongitude(userRequest.getAddress().getLongitude());
+            address.setUser(savedUser);
+            addressRepository.save(address);
+
+            // Set address back to the user for reference
+            savedUser.setAddress(address);
+        }
+    }
+
+    private void mapAndSaveUserProfile(UserRequestDTO userRequest, User savedUser) {
+        if (userRequest.getProfile() != null) {
+            Profile profile = new Profile();
+            profile.setProfilePictureUrl(userRequest.getProfile().getProfilePictureUrl());
+            profile.setSelfEmployed(userRequest.getProfile().isSelfEmployed());
+            profile.setCompanyType(userRequest.getProfile().getCompanyType());
+            profile.setActivityType(userRequest.getProfile().getActivityType());
+            profile.setUser(savedUser); // Link the profile to the user
+
+            // Save the profile
+            profileRepository.save(profile);
+
+            // Set the profile back to the user for reference
+            savedUser.setProfile(profile);
+        }
     }
 }

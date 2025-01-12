@@ -52,6 +52,12 @@ public class UserController {
 
     @PostMapping("/createDTO")
     public ResponseEntity<?> createUser(@RequestBody UserRequestDTO userRequest) {
+        ResponseEntity<Map<String, Object>> validationResponse = UserRequestValidator.validateUserRequest(userRequest);
+
+        if (validationResponse != null) {
+            // Return bad request with validation error
+            return validationResponse;
+        }
         return userService.createUserDTO(userRequest);
     }
 
