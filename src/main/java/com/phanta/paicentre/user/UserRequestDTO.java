@@ -215,8 +215,8 @@ public class UserRequestDTO {
     public static class UserPreferencesInfo {
         private String language;
         private String currency;
-        private boolean notificationsEnabled;
-        private boolean isTaxingPeople;
+        private Boolean notificationsEnabled;
+        private Boolean isTaxingPeople;
         private BigDecimal taxPercentage;
 
         public String getLanguage() {
@@ -235,19 +235,19 @@ public class UserRequestDTO {
             this.currency = currency;
         }
 
-        public boolean isNotificationsEnabled() {
+        public Boolean getIsNotificationsEnabled() {
             return notificationsEnabled;
         }
 
-        public void setNotificationsEnabled(boolean notificationsEnabled) {
+        public void setNotificationsEnabled(Boolean notificationsEnabled) {
             this.notificationsEnabled = notificationsEnabled;
         }
 
-        public boolean isTaxingPeople() {
+        public Boolean getIsTaxingPeople() {
             return isTaxingPeople;
         }
 
-        public void setTaxingPeople(boolean taxingPeople) {
+        public void setTaxingPeople(Boolean taxingPeople) {
             isTaxingPeople = taxingPeople;
         }
 
@@ -262,7 +262,7 @@ public class UserRequestDTO {
 
     public static class ProfileInfo {
         private String profilePictureUrl;
-        private boolean isSelfEmployed;
+        private Boolean isSelfEmployed;
         private String companyType;
         private String activityType;
 
@@ -274,11 +274,11 @@ public class UserRequestDTO {
             this.profilePictureUrl = profilePictureUrl;
         }
 
-        public boolean isSelfEmployed() {
+        public Boolean isSelfEmployed() {
             return isSelfEmployed;
         }
 
-        public void setSelfEmployed(boolean selfEmployed) {
+        public void setSelfEmployed(Boolean selfEmployed) {
             isSelfEmployed = selfEmployed;
         }
 

@@ -60,35 +60,38 @@ public class UserController {
         }
         return userService.createUserDTO(userRequest);
     }
+    /**
+     * Handles the PUT request to update a user.
+     *
+     * @param id             The ID of the user to update.
+     * @param userRequestDTO The request body containing the update details.
+     * @return ResponseEntity with the updated user or error details.
+     */
+    @PutMapping("/update/{id}")
+    public ResponseEntity<Object> updateUser(@PathVariable String id, @RequestBody UserRequestDTO userRequestDTO) {
+        if (userRequestDTO == null || userService.isEmpty(userRequestDTO)) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "timestamp", LocalDateTime.now(),
+                    "status", HttpStatus.BAD_REQUEST.value(),
+                    "error", "Bad Request",
+                    "message", "No fields to update or all fields are empty",
+                    "path", "/api/user/update/" + id
+            ));
+        }
 
-//    @PutMapping("/update/{id}")
-//    public ResponseEntity<Object> updateUser(@PathVariable String id, @RequestBody UserRequestDTO userRequestDTO) {
-//        if (userRequestDTO == null || isEmpty(userRequestDTO)) {
-//            return ResponseEntity.badRequest().body(Map.of(
-//                    "timestamp", LocalDateTime.now(),
-//                    "status", HttpStatus.BAD_REQUEST.value(),
-//                    "error", "Bad Request",
-//                    "message", "No fields to update or all fields are empty",
-//                    "path", "/api/user/update/" + id
-//            ));
-//        }
-//
-//        try {
-//            // Call the service to update the user
-//            User updatedUser = userService.updateUser(id, userRequestDTO);
-//            return ResponseEntity.ok(updatedUser);
-//        } catch (RuntimeException e) {
-//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
-//                    "timestamp", LocalDateTime.now(),
-//                    "status", HttpStatus.NOT_FOUND.value(),
-//                    "error", "Not Found",
-//                    "message", "User not found with ID: " + id,
-//                    "path", "/api/user/update/" + id
-//            ));
-//        }
-//    }
-
-
+        try {
+            UserResponseDTO updatedUser = userService.updateUser(id, userRequestDTO);
+            return ResponseEntity.ok(updatedUser);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "timestamp", LocalDateTime.now(),
+                    "status", HttpStatus.NOT_FOUND.value(),
+                    "error", "Not Found",
+                    "message", e.getMessage(),
+                    "path", "/api/user/update/" + id
+            ));
+        }
+    }
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable String id) {
         try {

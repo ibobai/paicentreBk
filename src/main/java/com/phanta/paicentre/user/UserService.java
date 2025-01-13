@@ -89,7 +89,6 @@ public class UserService {
             }
 
 
-
             // Map the personal info from the DTO to the User object
             return ResponseEntity.ok(UserRequestDTO.getSavedUserDTO(mapAndSaveUserWithAllDetails(userRequest)));
 
@@ -110,83 +109,157 @@ public class UserService {
     }
 
 
+    /**
+     * Updates an existing user based on the provided ID and UserRequestDTO.
+     *
+     * @param id             The ID of the user to update.
+     * @param userRequestDTO The request DTO containing the fields to update.
+     * @return The updated user in the form of a UserResponseDTO.
+     * @throws RuntimeException If the user with the given ID is not found.
+     */
+    public UserResponseDTO updateUser(String id, UserRequestDTO userRequestDTO) {
+        Optional<User> existingUserOpt = userRepository.findById(id);
 
-//    public User updateUser(String id, UserRequestDTO userRequestDTO) {
-//        Optional<User> existingUserOpt = userRepository.findById(id);
-//
-//        if (existingUserOpt.isEmpty()) {
-//            throw new RuntimeException("User not found with ID: " + id);
-//        }
-//
-//        User existingUser = existingUserOpt.get();
-//
-//        // Update personal details
-//        if (userRequestDTO.getPersonal() != null) {
-//            if (userRequestDTO.getPersonal().getFirstName() != null) {
-//                existingUser.getPersonal().setFirstName(userRequestDTO.getPersonal().getFirstName());
-//            }
-//            if (userRequestDTO.getPersonal().getLastName() != null) {
-//                existingUser.getPersonal().setLastName(userRequestDTO.getPersonal().getLastName());
-//            }
-//            if (userRequestDTO.getPersonal().getEmail() != null) {
-//                existingUser.getPersonal().setEmail(userRequestDTO.getPersonal().getEmail());
-//            }
-//            if (userRequestDTO.getPersonal().getPhone() != null) {
-//                existingUser.getPersonal().setPhone(userRequestDTO.getPersonal().getPhone());
-//            }
-//            if (userRequestDTO.getPersonal().getPassword() != null) {
-//                existingUser.getPersonal().setPassword(userRequestDTO.getPersonal().getPassword());
-//            }
-//            if (userRequestDTO.getPersonal().getSex() != null) {
-//                existingUser.getPersonal().setSex(userRequestDTO.getPersonal().getSex());
-//            }
-//        }
-//
-//        // Update business details
-//        if (userRequestDTO.getBusiness() != null) {
-//            if (userRequestDTO.getBusiness().getType() != null) {
-//                existingUser.getBusiness().setType(userRequestDTO.getBusiness().getType());
-//            }
-//            if (userRequestDTO.getBusiness().getCompanyType() != null) {
-//                existingUser.getBusiness().setCompanyType(userRequestDTO.getBusiness().getCompanyType());
-//            }
-//            if (userRequestDTO.getBusiness().getActivityType() != null) {
-//                existingUser.getBusiness().setActivityType(userRequestDTO.getBusiness().getActivityType());
-//            }
-//        }
-//
-//        // Update address details
-//        if (userRequestDTO.getAddress() != null) {
-//            if (userRequestDTO.getAddress().getStreet() != null) {
-//                existingUser.getAddress().setStreet(userRequestDTO.getAddress().getStreet());
-//            }
-//            if (userRequestDTO.getAddress().getCity() != null) {
-//                existingUser.getAddress().setCity(userRequestDTO.getAddress().getCity());
-//            }
-//            if (userRequestDTO.getAddress().getState() != null) {
-//                existingUser.getAddress().setState(userRequestDTO.getAddress().getState());
-//            }
-//            if (userRequestDTO.getAddress().getCountry() != null) {
-//                existingUser.getAddress().setCountry(userRequestDTO.getAddress().getCountry());
-//            }
-//            if (userRequestDTO.getAddress().getPostalCode() != null) {
-//                existingUser.getAddress().setPostalCode(userRequestDTO.getAddress().getPostalCode());
-//            }
-//        }
-//
-//        // Update preferences
-//        if (userRequestDTO.getPreferences() != null) {
-//            if (userRequestDTO.getPreferences().isAcceptTerms()) {
-//                existingUser.getPreferences().setAcceptTerms(userRequestDTO.getPreferences().isAcceptTerms());
-//            }
-//            if (userRequestDTO.getPreferences().isNewsletter()) {
-//                existingUser.getPreferences().setNewsletter(userRequestDTO.getPreferences().isNewsletter());
-//            }
-//        }
-//
-//        // Save and return the updated user
-//        return userRepository.save(existingUser);
-//    }
+        if (existingUserOpt.isEmpty()) {
+            throw new RuntimeException("User not found with ID: " + id);
+            //UserRequestValidator.buildErrorResponse("User not found with ID: " + id, "/api/user/update/"+id);
+            //return null;
+        }
+
+        User existingUser = existingUserOpt.get();
+
+        // Update fields only if they are not null or empty in the DTO
+        if (userRequestDTO.getFirstName() != null && !userRequestDTO.getFirstName().isBlank()) {
+            existingUser.setFirstName(userRequestDTO.getFirstName());
+        }
+        if (userRequestDTO.getLastName() != null && !userRequestDTO.getLastName().isBlank()) {
+            existingUser.setLastName(userRequestDTO.getLastName());
+        }
+        if (userRequestDTO.getEmail() != null && !userRequestDTO.getEmail().isBlank()) {
+            existingUser.setEmail(userRequestDTO.getEmail());
+        }
+        if (userRequestDTO.getPhoneNumber() != null && !userRequestDTO.getPhoneNumber().isBlank()) {
+            existingUser.setPhoneNumber(userRequestDTO.getPhoneNumber());
+        }
+        if (userRequestDTO.getPassword() != null && !userRequestDTO.getPassword().isBlank()) {
+            existingUser.setPassword(userRequestDTO.getPassword());
+        }
+        if (userRequestDTO.getSex() != null && !userRequestDTO.getSex().isBlank()) {
+            existingUser.setSex(userRequestDTO.getSex());
+        }
+        if (userRequestDTO.getDateOfBirth() != null) {
+            existingUser.setDateOfBirth(userRequestDTO.getDateOfBirth());
+        }
+        if (userRequestDTO.getIsActive() != null) {
+            existingUser.setIsActive(userRequestDTO.getIsActive());
+        }
+        if (userRequestDTO.getRole() != null) {
+            existingUser.setRole(userRequestDTO.getRole());
+        }
+
+
+        // Update address if provided
+        if (userRequestDTO.getAddress() != null) {
+            UserRequestDTO.AddressInfo addressInfo = userRequestDTO.getAddress();
+            Address address = existingUser.getAddress();
+            if (address == null) {
+                address = new Address();
+                existingUser.setAddress(address);
+            }
+            if (addressInfo.getStreet() != null && !addressInfo.getStreet().isBlank()) {
+                address.setStreet(addressInfo.getStreet());
+            }
+            if (addressInfo.getCity() != null && !addressInfo.getCity().isBlank()) {
+                address.setCity(addressInfo.getCity());
+            }
+            if (addressInfo.getState() != null && !addressInfo.getState().isBlank()) {
+                address.setState(addressInfo.getState());
+            }
+            if (addressInfo.getCountry() != null && !addressInfo.getCountry().isBlank()) {
+                address.setCountry(addressInfo.getCountry());
+            }
+            if (addressInfo.getPostalCode() != null && !addressInfo.getPostalCode().isBlank()) {
+                address.setPostalCode(addressInfo.getPostalCode());
+            }
+            if (addressInfo.getLatitude() != 0.0) { // or some other default value
+                address.setLatitude(addressInfo.getLatitude());
+            }
+            if (addressInfo.getLongitude() != 0.0) { // or some other default value
+                address.setLongitude(addressInfo.getLongitude());
+            }
+
+        }
+
+        // Update preferences if provided
+        if (userRequestDTO.getUserPreferences() != null) {
+            UserRequestDTO.UserPreferencesInfo preferencesInfo = userRequestDTO.getUserPreferences();
+            UserPreferences preferences = existingUser.getPreferences();
+            if (preferences == null) {
+                preferences = new UserPreferences();
+                existingUser.setPreferences(preferences);
+            }
+            if (preferencesInfo.getLanguage() != null && !preferencesInfo.getLanguage().isBlank()) {
+                preferences.setLanguage(preferencesInfo.getLanguage());
+            }
+            if (preferencesInfo.getCurrency() != null && !preferencesInfo.getCurrency().isBlank()) {
+                preferences.setCurrency(preferencesInfo.getCurrency());
+            }
+            if (preferencesInfo.getIsNotificationsEnabled() != null) {
+                preferences.setNotificationsEnabled(preferencesInfo.getIsNotificationsEnabled());
+            }
+            if (preferencesInfo.getIsTaxingPeople() != null) {
+                preferences.setTaxingPeople(preferencesInfo.getIsTaxingPeople());
+            }
+            if (preferencesInfo.getTaxPercentage() != null) {
+                preferences.setTaxPercentage(preferencesInfo.getTaxPercentage());
+            }
+        }
+        // Update Profile
+        if (userRequestDTO.getProfile() != null) {
+            UserRequestDTO.ProfileInfo profileInfo = userRequestDTO.getProfile();
+            Profile profile = existingUser.getProfile();
+            if (profile == null) {
+                profile = new Profile();
+                existingUser.setProfile(profile);
+            }
+
+            if (profileInfo.getProfilePictureUrl() != null) {
+                profile.setProfilePictureUrl(profileInfo.getProfilePictureUrl());
+            }
+            if (profileInfo.isSelfEmployed() != null) {
+                profile.setSelfEmployed(profileInfo.isSelfEmployed());
+            }
+            if (profileInfo.getCompanyType() != null) {
+                profile.setCompanyType(profileInfo.getCompanyType());
+            }
+            if (profileInfo.getActivityType() != null) {
+                profile.setActivityType(profileInfo.getActivityType());
+            }
+        }
+
+        // Save and return the updated user
+        User savedUser = userRepository.save(existingUser);
+        return UserRequestDTO.getSavedUserDTO(savedUser);
+    }
+
+    /**
+     * Checks if a UserRequestDTO is empty (all fields are null or blank).
+     *
+     * @param userRequestDTO The request DTO to check.
+     * @return True if the DTO is empty, false otherwise.
+     */
+    public boolean isEmpty(UserRequestDTO userRequestDTO) {
+        return (userRequestDTO.getFirstName() == null || userRequestDTO.getFirstName().isBlank()) &&
+                (userRequestDTO.getLastName() == null || userRequestDTO.getLastName().isBlank()) &&
+                (userRequestDTO.getEmail() == null || userRequestDTO.getEmail().isBlank()) &&
+                (userRequestDTO.getPhoneNumber() == null || userRequestDTO.getPhoneNumber().isBlank()) &&
+                (userRequestDTO.getPassword() == null || userRequestDTO.getPassword().isBlank()) &&
+                userRequestDTO.getSex() == null &&
+                userRequestDTO.getDateOfBirth() == null &&
+                userRequestDTO.getAddress() == null &&
+                userRequestDTO.getUserPreferences() == null &&
+                userRequestDTO.getProfile() == null;
+    }
 
 
 
@@ -230,12 +303,11 @@ public class UserService {
         }
     }
 
-
     /**
      * Authenticates the user and returns the access token and refresh token.
      *
-     * @param email    The email of the user
-     * @param password The password of the user
+     * @param email    The email of the user extracted from Basic Auth
+     * @param password The password of the user extracted from Basic Auth
      * @return ResponseEntity containing the validation result and tokens
      */
     public ResponseEntity<Map<String, Object>> login(String email, String password) {
@@ -247,7 +319,7 @@ public class UserService {
         if (userOptional.isPresent()) {
             User user = userOptional.get();
 
-            // Check if the password matches (you should ideally hash passwords)
+            // Check if the password matches (hashing is recommended in production)
             if (password.equals(user.getPassword())) {
 
                 // Generate the access token and refresh token
@@ -259,19 +331,19 @@ public class UserService {
                 response.put("accessToken", accessToken);
                 response.put("refreshToken", refreshToken);
 
-                return ResponseEntity.ok(response);  // Return 200 OK with tokens
+                return ResponseEntity.ok(response); // Return 200 OK with tokens
             } else {
                 response.put("valid", false);
                 response.put("message", "Invalid email or password");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);  // Return 401 Unauthorized
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response); // Return 401 Unauthorized
             }
+        } else {
+            response.put("valid", false);
+            response.put("message", "User not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response); // Return 404 Not Found
         }
-
-        // If user is not found
-        response.put("valid", false);
-        response.put("message", "Invalid email or password");
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);  // Return 401 Unauthorized
     }
+
 
     public User mapAndSaveUserWithAllDetails(UserRequestDTO userRequest) {
         // Map and save basic user details and generate ID
@@ -308,8 +380,8 @@ public class UserService {
             UserPreferences userPreferences = new UserPreferences();
             userPreferences.setLanguage(userRequest.getUserPreferences().getLanguage());
             userPreferences.setCurrency(userRequest.getUserPreferences().getCurrency());
-            userPreferences.setNotificationsEnabled(userRequest.getUserPreferences().isNotificationsEnabled());
-            userPreferences.setTaxingPeople(userRequest.getUserPreferences().isTaxingPeople());
+            userPreferences.setNotificationsEnabled(userRequest.getUserPreferences().getIsNotificationsEnabled());
+            userPreferences.setTaxingPeople(userRequest.getUserPreferences().getIsTaxingPeople());
             userPreferences.setTaxPercentage(userRequest.getUserPreferences().getTaxPercentage());
             userPreferences.setUser(savedUser);
             userPreferencesRepository.save(userPreferences);
